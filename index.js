@@ -12,26 +12,26 @@ app.use(express.json());
 // For parsing URL-encoded data (if you also need to handle form submissions)
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/users", (req, res)=>{
+app.get("/users", (req, res) => {
     const html = `
     <ul>
-        ${users.map((user)=>`<li>${user.first_name}</li>`).join("")}
+        ${users.map((user) => `<li>${user.first_name}</li>`).join("")}
     </ul>
     `;
     res.send(html);
 })
 
-app.get("/api/users", (req, res)=>{
+app.get("/api/users", (req, res) => {
     return res.json(users)
 })
 
-app.post("/api/users", (req, res)=>{
+app.post("/api/users", (req, res) => {
     // create new user
     const body = req.body;
     // console.log("Body", body)
-    users.push({ ...body, id: users.length + 1});
-    fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data)=>{
-        return res.json({ status: "new user add success", id: users.length})
+    users.push({ ...body, id: users.length + 1 });
+    fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
+        return res.json({ status: "new user add success", id: users.length })
     })
 })
 
@@ -42,9 +42,49 @@ app.route("/api/users/:id")
         return res.json(user);
     })
     .patch((req, res) => {
-        // edit the user by id
-        return res.json({ status: "pending" });
+        const id = Number(req.params.id);
+        const body = req.body;
+
+        fs.readFile('./MOCK_DATA.json', 'utf8', (err, data) => {
+            if (err) {
+                console.error("Error reading file:", err);
+                return res.status(500).json({ error: 'Error updating user.' }); // Send JSON error
+            }
+
+            try {
+                let users = JSON.parse(data);
+
+                const userIndex = users.findIndex(user => user.id === id);
+
+                if (userIndex === -1) {
+                    return res.status(404).json({ error: 'User not found.' }); // Send JSON error
+                }
+
+                // Update the user's properties with the values from the request body
+                // Only update the properties that are actually provided in the body.
+                for (const key in body) {
+                    if (body.hasOwnProperty(key)) {
+                        users[userIndex][key] = body[key];
+                    }
+                }
+
+
+                fs.writeFile('./MOCK_DATA.json', JSON.stringify(users, null, 2), 'utf8', (err) => {
+                    if (err) {
+                        console.error("Error writing file:", err);
+                        return res.status(500).json({ error: 'Error updating user.' }); // Send JSON error
+                    }
+
+                    res.json({ status: 'User updated successfully', user: users[userIndex] }); // Send updated user
+                });
+
+            } catch (parseError) {
+                console.error("Error parsing JSON:", parseError);
+                return res.status(500).json({ error: 'Error updating user.' }); // Send JSON error
+            }
+        });
     })
+
     .delete((req, res) => {
         // deleted the user by id
         // const id = Number(req.params.id);
@@ -53,41 +93,41 @@ app.route("/api/users/:id")
 
         const id = Number(req.params.id);
 
-    // 1. Read the JSON file
-    fs.readFile('./MOCK_DATA.json', 'utf8', (err, data) => {
-        if (err) {
-            console.error("Error reading file:", err);
-            return res.status(500).send('Error deleting user.');
-        }
-
-        try {
-            let users = JSON.parse(data);
-
-            // 2. Find the user to delete
-            const userIndex = users.findIndex(user => user.id === id);
-
-            if (userIndex === -1) {
-                return res.status(404).send('User not found.');
+        // 1. Read the JSON file
+        fs.readFile('./MOCK_DATA.json', 'utf8', (err, data) => {
+            if (err) {
+                console.error("Error reading file:", err);
+                return res.status(500).send('Error deleting user.');
             }
 
-            // 3. Delete the user from the array
-            users.splice(userIndex, 1);
+            try {
+                let users = JSON.parse(data);
 
-            // 4. Write the updated data back to the file
-            fs.writeFile('./MOCK_DATA.json', JSON.stringify(users, null, 2), 'utf8', (err) => {  //null, 2 for formatted json
-                if (err) {
-                    console.error("Error writing file:", err);
-                    return res.status(500).send('Error deleting user.');
+                // 2. Find the user to delete
+                const userIndex = users.findIndex(user => user.id === id);
+
+                if (userIndex === -1) {
+                    return res.status(404).send('User not found.');
                 }
 
-                res.status(200).send('User deleted successfully.');
-            });
+                // 3. Delete the user from the array
+                users.splice(userIndex, 1);
 
-        } catch (parseError) {
-            console.error("Error parsing JSON:", parseError);
-            return res.status(500).send('Error deleting user.');
-        }
-    });
+                // 4. Write the updated data back to the file
+                fs.writeFile('./MOCK_DATA.json', JSON.stringify(users, null, 2), 'utf8', (err) => {  //null, 2 for formatted json
+                    if (err) {
+                        console.error("Error writing file:", err);
+                        return res.status(500).send('Error deleting user.');
+                    }
+
+                    res.status(200).send('User deleted successfully.');
+                });
+
+            } catch (parseError) {
+                console.error("Error parsing JSON:", parseError);
+                return res.status(500).send('Error deleting user.');
+            }
+        });
     })
 
-app.listen(port,()=>console.log(`server run on port: ${port}`))
+app.listen(port, () => console.log(`server run on port: ${port}`))
