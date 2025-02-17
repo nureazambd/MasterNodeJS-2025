@@ -134,3 +134,6 @@ dist
 
 # Optional - For pnpm
 .pnpm-store
+
+# MOCK_DATA
+MOCK_DATA.json

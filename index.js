@@ -1,21 +1,11 @@
-const express = require('express')
-const app = express()
-const math = require("./math.js")
+const express = require("express");
+const users = require("./MOCK_DATA.json");
 
-app.get('/', function (req, res) {
-  res.send('Hello World')
+const app = express();
+const port = 8000;
+
+app.get("/api/users", (req, res)=>{
+    return res.json(users)
 })
 
-app.get('/add', (req, res)=>{
-    const sum =math.add(4, 6)
-    res.send(JSON.stringify(sum))
-    console.log(sum)
-})
-
-app.get('/sub', (req, res)=>{
-    const sub =math.sub(40, 6)
-    res.send(JSON.stringify(sub))
-    console.log(sub)
-})
-
-app.listen(3000)
+app.listen(port,()=>console.log(`server run on port: ${port}`))
